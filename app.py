@@ -195,7 +195,9 @@ if st.button("✨ 초정밀 AI 매칭 분석 시작"):
             # 결과 렌더링
             st.markdown("<br><h2 style='text-align:center;'>🎯 분석 결과 TOP 10</h2>", unsafe_allow_html=True)
             for idx, item in enumerate(scored_data[:10]):
-                dist_label = "🏠 재택/온라인" if item['dist_km'] == 0 else (f"📍 약 {item['dist_km']}km" if item['dist_km'] < 900 else "📍 위치 미상")
+                # 거리 텍스트 포맷팅 (None 에러 방지 처리 완료)
+                d_km = item.get('dist_km')
+                dist_label = "🏠 재택/온라인" if d_km == 0 else (f"📍 약 {d_km}km" if d_km is not None and d_km < 900 else "📍 위치 미상")
                 
                 st.markdown(f"""
                 <div class="vol-card">

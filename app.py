@@ -121,12 +121,26 @@ def fetch_1365_data(keyword, num_rows=40):
     except: pass
     return v_list
 
+# ✨ 수정된 부분 1: 스마트 주소 클리닝이 적용된 좌표 변환 함수
 def get_coords(addr, key):
+    headers = {"Authorization": f"KakaoAK {key}"}
+    
+    # 🧹 1단계: 더티 데이터 청소 (괄호나 쉼표 뒤의 쓸데없는 상세 설명 잘라내기)
+    clean_addr = addr.split('(')[0].split(',')[0].strip()
+    
     try:
-        res = requests.get("https://dapi.kakao.com/v2/local/search/address.json", 
-                           headers={"Authorization": f"KakaoAK {key}"}, params={"query": addr}).json()
-        if res['documents']: return float(res['documents'][0]['y']), float(res['documents'][0]['x'])
-    except: pass
+        # 🎯 2단계: 카카오 '주소' 정밀 검색 시도
+        res = requests.get("https://dapi.kakao.com/v2/local/search/address.json", headers=headers, params={"query": clean_addr}).json()
+        if res.get('documents'): 
+            return float(res['documents'][0]['y']), float(res['documents'][0]['x'])
+            
+        # 🚀 3단계: 주소가 아니라 '장소명(예: 순천시청)'으로 적혀있을 때를 위한 '키워드' 검색 풀가동!
+        res_kw = requests.get("https://dapi.kakao.com/v2/local/search/keyword.json", headers=headers, params={"query": clean_addr}).json()
+        if res_kw.get('documents'):
+            return float(res_kw['documents'][0]['y']), float(res_kw['documents'][0]['x'])
+    except: 
+        pass
+        
     return None, None
 
 def calc_dist(lat1, lon1, lat2, lon2):
@@ -195,7 +209,8 @@ if st.button("✨ 초정밀 AI 매칭 분석 시작"):
             # 결과 렌더링
             st.markdown("<br><h2 style='text-align:center;'>🎯 분석 결과 TOP 10</h2>", unsafe_allow_html=True)
             for idx, item in enumerate(scored_data[:10]):
-                # 거리 텍스트 포맷팅 (None 에러 방지 처리 완료)
+                
+                # ✨ 수정된 부분 2: None 에러를 완벽히 막아내는 거리 텍스트 안전 처리
                 d_km = item.get('dist_km')
                 dist_label = "🏠 재택/온라인" if d_km == 0 else (f"📍 약 {d_km}km" if d_km is not None and d_km < 900 else "📍 위치 미상")
                 
